@@ -1,0 +1,14 @@
+# Promptfoo regression config (complements pytest gate).
+# Install: npm install -g promptfoo (optional). Run: promptfoo eval
+# Each test calls the local RAG bot via the python provider script.
+description: "IRS support bot regression (independent reimplementation, not DoorDash)"
+providers:
+  - id: "exec"
+    label: "rag-bot-tier1+2"
+    config:
+      command: ".venv/bin/python scripts/promptfoo_provider.py"
+prompts:
+  - file: "eval/prompt_template.txt"
+tests: "eval/eval_set.jsonl"
+threshold:
+  score: 0.7

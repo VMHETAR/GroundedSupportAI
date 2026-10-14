@@ -1,0 +1,80 @@
+# Dasher-style support automation — independent reimplementation (IRS corpus)
+# Single config for swappable generation model. All scripts read this file.
+
+corpus:
+  name: "IRS small-business support excerpts (public domain)"
+  pubs:
+    - id: "p334"
+      title: "Publication 334, Tax Guide for Small Business (2025, for 2025 returns)"
+      url_pdf: "https://www.irs.gov/pub/irs-pdf/p334.pdf"
+      url_html: "https://www.irs.gov/publications/p334"
+      sections_wanted:
+        - "are-you-self-employed"
+        - "business-income"
+        - "business-expenses"
+        - "car-truck"
+        - "travel-meals"
+        - "se-tax"
+    - id: "p587"
+      title: "Publication 587, Business Use of Your Home (2024)"
+      url_pdf: "https://www.irs.gov/pub/irs-pdf/p587.pdf"
+      url_html: "https://www.irs.gov/publications/p587"
+      sections_wanted:
+        - "exclusive-regular-use"
+        - "principal-place"
+        - "simplified-method"
+        - "actual-expenses"
+  # Note: IRS retired Publication 535 (Business Expenses) as a standalone PDF;
+  # it now redirects to "Guide to Business Expense Resources". Its content
+  # overlaps Pub 334 Ch.8, so Pub 334 Ch.8 serves as the expenses source.
+  chunk_chars: 1800
+  chunk_overlap_chars: 200
+
+embeddings:
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+  dim: 384
+
+qdrant:
+  path: "./qdrant_data"
+  collection: "irs_support"
+  top_n: 5
+
+llm:
+  # Single swappable generation config. Provider is OpenAI-compatible.
+  # Set OMNIROUTER_API_KEY and optionally OMNIROUTER_BASE_URL.
+  # Falls back to OPENAI_API_KEY / OPENAI_BASE_URL, else extractive fallback.
+  provider: "omnirouter"
+  base_url_env: "OMNIROUTER_BASE_URL"
+  api_key_env: "OMNIROUTER_API_KEY"
+  default_base_url: "http://localhost:20128/v1"
+  generation_model: "llama3.1:8b"
+  condense_model: "llama3.1:8b"
+  evaluator_model: "llama3.1:8b"
+  judge_model: "llama3.1:8b"
+  timeout_s: 60
+  max_tokens: 512
+  temperature: 0.2
+
+retrieval:
+  top_n: 5
+
+guardrail:
+  tier1_threshold: 0.28
+  tier1_window_words: 80
+  tier1_stride_words: 40
+  fallback_message: "I can't verify this answer against the IRS guides in my knowledge base, so I won't guess. Please contact a tax professional or request a human handoff for help with your specific situation."
+
+eval:
+  eval_set: "eval/eval_set.jsonl"
+  calibration_set: "eval/calibration_examples.json"
+  baseline: "eval/baseline.json"
+  results_json: "results/results.json"
+  results_md: "results/results.md"
+  failures_md: "failures.md"
+  refusal_phrases:
+    - "can't verify"
+    - "not in my knowledge base"
+    - "cannot answer from the provided"
+    - "i don't have enough information in the provided guides"
+    - "request a human"
+    - "contact a tax professional"
